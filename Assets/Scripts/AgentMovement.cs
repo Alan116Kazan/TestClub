@@ -10,7 +10,7 @@ public class AgentMovement : MonoBehaviour
     public Transform[] loungeTargets; // Цели в лаунже
 
     private NavMeshAgent agent;
-    //private Animator animator;
+    private Animator animator;
     private Transform currentTarget;
     private bool isWaiting = false;
 
@@ -19,7 +19,7 @@ public class AgentMovement : MonoBehaviour
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
-        //animator = GetComponent<Animator>();
+        animator = GetComponent<Animator>();
         GoToNextTarget();
     }
 
@@ -34,6 +34,7 @@ public class AgentMovement : MonoBehaviour
     private void GoToNextTarget()
     {
         int randomZone = Random.Range(0, 3); // 0 - танцпол, 1 - бар, 2 - лаундж
+        Debug.Log(randomZone);
         Transform[] targetArray;
 
         switch (randomZone)
@@ -57,6 +58,7 @@ public class AgentMovement : MonoBehaviour
         {
             agent.SetDestination(currentTarget.position);
             occupiedTargets.Add(currentTarget); // Добавляем целевую точку в занятые
+            animator.SetBool("IsWalking", true); // Включаем анимацию ходьбы
         }
         else
         {
@@ -86,40 +88,48 @@ public class AgentMovement : MonoBehaviour
     private IEnumerator WaitAtTarget()
     {
         isWaiting = true;
+        animator.SetBool("IsWalking", false); // Отключаем анимацию ходьбы
         float waitTime;
 
         // Определяем задержку и анимацию в зависимости от зоны
         if (System.Array.Exists(danceFloorTargets, target => target == currentTarget))
         {
-            waitTime = Random.Range(30f, 60f);
-            //animator.SetBool("IsDancing", true); // Включаем анимацию для танцпола
+            waitTime = Random.Range(25f, 40f);
+            animator.SetBool("IsDancing", true); // Включаем анимацию для танцпола
         }
         else if (System.Array.Exists(barTargets, target => target == currentTarget))
         {
-            waitTime = Random.Range(5f, 15f);
-            //animator.SetBool("IsDrinking", true); // Включаем анимацию для бара
+            waitTime = Random.Range(5f, 10f);
+            animator.SetBool("IsDrinking", true); // Включаем анимацию для бара
         }
         else if (System.Array.Exists(loungeTargets, target => target == currentTarget))
         {
             waitTime = Random.Range(15f, 30f);
-            //animator.SetBool("IsRelaxing", true); // Включаем анимацию для лаунджа
+            animator.SetBool("IsRelaxing", true); // Включаем анимацию для лаунджа
+            StartCoroutine(SetIsSittingAfterDelay(1f)); // Запускаем корутину с задержкой 1 секунда
         }
         else
         {
             waitTime = 10f; // Задержка по умолчанию
         }
 
-        //Debug.Log(waitTime);
-
         yield return new WaitForSeconds(waitTime);
 
         // Сбрасываем все анимации после ожидания
-        //animator.SetBool("IsDancing", false);
-        //animator.SetBool("IsDrinking", false);
-        //animator.SetBool("IsRelaxing", false);
+        animator.SetBool("IsDancing", false);
+        animator.SetBool("IsDrinking", false);
+        animator.SetBool("IsRelaxing", false);
+        animator.SetBool("IsSitting", false);
 
         occupiedTargets.Remove(currentTarget); // Убираем целевую точку из занятых
         GoToNextTarget(); // Переход к следующей цели после задержки
         isWaiting = false;
+    }
+
+    // Вынесенная корутина для установки IsSitting в true через заданную задержку
+    private IEnumerator SetIsSittingAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay); // Ждем указанную задержку
+        animator.SetBool("IsSitting", true); // Устанавливаем IsSitting в true
     }
 }
